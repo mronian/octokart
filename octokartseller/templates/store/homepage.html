@@ -1,0 +1,38 @@
+{% load staticfiles %}
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Octokart Seller</title>
+        
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+        <script src="{% static 'js/store.js' %}"></script>
+        
+    </head>
+    <body>
+        <div class="container">
+            <div class="col-xs-8 cox-xs-offset-2">
+                <table class="table col-xs-10 col-xs-offset-1">
+				<thead>
+					<tr>
+						<th>Item ID</th>
+						<th>Name</th>
+						<th>Description</th>
+						<th>Number in Stock</th>
+					</tr>
+				</thead>
+				<tbody id="tablebody">
+				</tbody>
+			</table>
+                <div class="row text-center">
+                    <button class="btn btn-default" id="refreshcat">Refresh Catalogue</button>
+                    <button class="btn btn-default" id="synccat">Sync</button>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

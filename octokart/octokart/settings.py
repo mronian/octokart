@@ -28,8 +28,9 @@ SECRET_KEY = '3vo7!$h0jy5+-o7@cgtx_w5w*8^m^3z0jr$0e1v61$6=ls*m^8'
 DEBUG = True
 
 ALLOWED_HOSTS = []
+CORS_ORIGIN_ALLOW_ALL = True
 
-
+LOGIN_URL = '/'
 # Application definition
 
 INSTALLED_APPS = [
@@ -43,12 +44,19 @@ INSTALLED_APPS = [
     'transactions',
     'store',
     'upvotes',
-    'seller'
+    'seller',
+    'corsheaders'
 ]
+
+PASSWORD_HASHERS = (
+'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+)
 
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
