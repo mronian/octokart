@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponse
 from models import Connection
+from django.conf import settings
 import socket
 from urllib2 import urlopen, URLError, HTTPError
 
@@ -8,11 +9,24 @@ socket.setdefaulttimeout( 23 )  # timeout in seconds
 
 
 # Create your views here.
-def make_connection():
-    pass
+def add_connection(request):
+    new_ip=request.POST["ip"]
+    new_port=request.POST['port']
+    Connection.objects.get_or_create(ip=new_ip, port=new_port)
+    
+    return redirect('/transactions/connections_manager/')
+
+def delete_connections(request):
+    Connection.objects.filter(creator=settings.SERVER_ID_OCTOKART).delete()
+    
+    return redirect('/transactions/connections_manager/')
 
 def check_connection(request):
+    conns=Connection.objects.all()
+    for c in conns:
+        print c.id
     conn_id=request.GET[u'id']
+    print conn_id
     conn=Connection.objects.get(id=conn_id)
     url="http://"+conn.ip+":"+conn.port+"/transactions/connections_manager/"
     result=""
@@ -32,11 +46,11 @@ def close_connection():
 
 def connections_manager(request):
     
-    Connection.objects.get_or_create(ip="10.109.9.63", port="4000")
-    Connection.objects.get_or_create(ip="10.109.9.63", port="5000")
-    Connection.objects.get_or_create(ip="10.109.9.63", port="6000")
+    active_connections=Connection.objects.filter(creator=settings.SERVER_ID_OCTOKART)
     
-    active_connections=Connection.objects.all()
+    for conn in active_connections:
+        print conn.creator
+    
     
     return render(request, 'transactions/manager.html', {'connections':active_connections})
     

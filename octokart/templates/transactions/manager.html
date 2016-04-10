@@ -1,7 +1,12 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Connections Manager</h1>
-<button id="add-connection">Add</button>
+<form id="connForm" action="/transactions/connections_manager/add_connection/" method="post">
+    {% csrf_token %}
+<input type="text" placeholder="ENTER IP" name="ip"><input type="text" placeholder="ENTER PORT" name="port"><button type="submit" id="add-connection">Add</button>
+</form>
+<button id="delete-connections" onclick="location.href='/transactions/connections_manager/delete_connections/';">Delete All Connections</button>
+<hr>
 <ul>
 {% for conn in connections %}
     <li>{{conn.ip}} - {{conn.port}} <button class="check-connection" conn_id="{{conn.id}}">Check</button><p id="response-{{conn.id}}"></p></li>
