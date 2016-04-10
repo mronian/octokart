@@ -4,7 +4,7 @@
 <button id="add-connection">Add</button>
 <ul>
 {% for conn in connections %}
-    <li>{{conn.ip}} - {{conn.port}} <button id="check-connection" conn_id="{{conn.id}}">Check</button></li>
+    <li>{{conn.ip}} - {{conn.port}} <button class="check-connection" conn_id="{{conn.id}}">Check</button><p id="response-{{conn.id}}"></p></li>
 {% endfor %}
 </ul>
 {% endblock %}
