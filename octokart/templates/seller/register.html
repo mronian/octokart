@@ -1,16 +1,10 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Register as a Seller</title>
-    </head>
-
-    <body>
-        <h1>Register with Octokart</h1>
-        <form id="user_form" method="post" action="/seller/register/"
-                enctype="multipart/form-data">
-            {% csrf_token %}
-            {{ user_form.as_p }}
-            <input type="submit" name="submit" value="Register" />
-        </form>
-    </body>
-</html>
+{% extends 'base.html' %}
+{% block content %}
+<h1>Register with Octokart</h1>
+<form id="user_form" method="post" action="/seller/register/"
+        enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ user_form.as_p }}
+    <input type="submit" name="submit" value="Register" />
+</form>
+{% endblock %}
