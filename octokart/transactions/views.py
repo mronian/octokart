@@ -7,7 +7,6 @@ from urllib2 import urlopen, URLError, HTTPError
 
 socket.setdefaulttimeout( 23 )  # timeout in seconds
 
-
 # Create your views here.
 def add_connection(request):
     new_ip=request.POST["ip"]
@@ -22,11 +21,7 @@ def delete_connections(request):
     return redirect('/transactions/connections_manager/')
 
 def check_connection(request):
-    conns=Connection.objects.all()
-    for c in conns:
-        print c.id
     conn_id=request.GET[u'id']
-    print conn_id
     conn=Connection.objects.get(id=conn_id)
     url="http://"+conn.ip+":"+conn.port+"/transactions/connections_manager/"
     result=""
