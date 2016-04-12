@@ -7,7 +7,6 @@ class Connection(models.Model):
     
     ip = models.TextField(null=False, blank=False)
     port = models.TextField(null=False, blank=False)
-    creator = models.TextField(default=settings.SERVER_ID_OCTOKART)
     
     def __unicode__(self):
             return self.ip+":"+self.port

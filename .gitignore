@@ -2,6 +2,7 @@
 2000*
 3000*
 4000*
+update_servers.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

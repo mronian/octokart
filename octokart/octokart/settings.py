@@ -33,8 +33,11 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 if sys.argv[1]=="runserver":
     SERVER_ID_OCTOKART = sys.argv[2]
+    SERVER_IP, SERVER_PORT=SERVER_ID_OCTOKART.split(":")
 else :
     SERVER_ID_OCTOKART=""
+    SERVER_IP=""
+    SERVER_PORT=""
 
 LOGIN_URL = '/'
 # Application definition

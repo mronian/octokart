@@ -3,20 +3,35 @@ from django.http import JsonResponse, HttpResponse
 from models import Connection
 from django.conf import settings
 import socket
+import urllib2
 from urllib2 import urlopen, URLError, HTTPError
-
+from urllib import urlencode
+from django.views.decorators.csrf import csrf_exempt
 socket.setdefaulttimeout( 23 )  # timeout in seconds
+
+@csrf_exempt
+def receive_connection(request):
+    new_ip=request.POST["ip"]
+    new_port=request.POST['port']
+    conn, _=Connection.objects.get_or_create(ip=new_ip, port=new_port)
+    
+    return HttpResponse("Connection Added")
 
 # Create your views here.
 def add_connection(request):
     new_ip=request.POST["ip"]
     new_port=request.POST['port']
-    Connection.objects.get_or_create(ip=new_ip, port=new_port)
-    
+    conn, _=Connection.objects.get_or_create(ip=new_ip, port=new_port)
+    post_data=[('ip',conn.ip), ('port',conn.port)]
+    url="http://"+conn.ip+":"+conn.port+"/transactions/connections_manager/receive_connection/"
+   
+    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT)
+    encoded_params = urlencode(params)
+    response=urlopen(url, encoded_params)
     return redirect('/transactions/connections_manager/')
 
 def delete_connections(request):
-    Connection.objects.filter(creator=settings.SERVER_ID_OCTOKART).delete()
+    Connection.objects.all().delete()
     
     return redirect('/transactions/connections_manager/')
 
@@ -41,11 +56,7 @@ def close_connection():
 
 def connections_manager(request):
     
-    active_connections=Connection.objects.filter(creator=settings.SERVER_ID_OCTOKART)
-    
-    for conn in active_connections:
-        print conn.creator
-    
+    active_connections=Connection.objects.all()
     
     return render(request, 'transactions/manager.html', {'connections':active_connections})
     
