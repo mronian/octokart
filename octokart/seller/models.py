@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-
+from django.contrib.auth.models import User
 from django.db import models
 
 # Create your models here.
@@ -12,6 +12,10 @@ class CatalogueItem(models.Model):
     def __unicode__(self):
             return self.name
         
-class UserItem(models.Model):
+class SellerItem(models.Model):
+    item_id=models.ForeignKey(CatalogueItem)
+    seller_id=models.ForeignKey(User)
+    quantity = models.IntegerField(default=0)
     
-    pass
+    def __unicode__(self):
+        return str(self.seller_id)+":"+str(self.item_id)+":"+str(self.quantity)

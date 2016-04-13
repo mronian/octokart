@@ -1,5 +1,5 @@
 from django.conf.urls import patterns, url
-from transactions import views
+from locks import views
 
 urlpatterns = [
         url(r'^seller/request/$', views.seller_request, name='seller_request'),
