@@ -7,7 +7,7 @@ import urllib2
 from urllib2 import urlopen, URLError, HTTPError
 from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
-from locks.views import items_request
+from locks.views import items_request, items_release
 from flood import flood
 
 socket.setdefaulttimeout( 23 )  # timeout in seconds
@@ -23,8 +23,8 @@ def receive_connection(request):
     return HttpResponse("Connection Added")
 
 @csrf_exempt
-def prepare_for_commit(request="self", msg="default"):
-    if request!="self":
+def prepare_for_commit(request=None, msg=None):
+    if request!=None:
         msg_id=request.POST["message"]
         mip=request.POST["ip"]
         mport=request.POST['port']
@@ -67,46 +67,64 @@ def commit(request):
     
     pass
 
+def release_locks(msg, table_to_lock):
+    print "RELEASING LOCKS FOR TABLE:"+table_to_lock
+    
+    if table_to_lock=="items":
+        response=items_release(None, msg, 1)
+    
+    print "RELEASED LOCKS FROM ALL CONNECTIONS FOR TABLE:"+table_to_lock
+    
+    return "Success"
+
+
 def acquire_locks(msg, table_to_lock):
     
     print "REQUESTING LOCKS FOR TABLE:"+table_to_lock
     
     if table_to_lock=="items":
-        response=items_request("self", msg)
-    
+        response=items_request(None, msg, 1)
     
     if response.getvalue()=="Success":
         print "ACQUIRED LOCKS FROM ALL CONNECTIONS FOR TABLE:"+table_to_lock
         
-        return HttpResponse("Success")
+        return "Success"
     else:
         print "LOCKS COULD NOT BE ACQUIRED"
         
-        return HttpResponse("Abort")
+        return "Abort"
     
 @csrf_exempt
 def perform_transaction(request):
-    
     
     trans_type_id=1
     #trans_type=int(request.POST["trans_type"])
     table_to_lock=transaction_type[trans_type_id]
     
-    msg=Message.objects.create()
-    msg.mid=settings.SERVER_ID_OCTOKART+":"+str(msg.id)    
-    msg.save()
+    msg=create_message()
     
     locked=acquire_locks(msg, table_to_lock)
     
-    if locked.getvalue()=="Success":
-        response=prepare_for_commit("self", msg)
+    if locked=="Success":
+        msg=create_message()
+        response=prepare_for_commit(None, msg)
+
+        msg=create_message()    
+        release_locks(msg, table_to_lock)
 
         if response.getvalue()=="Success":
             return HttpResponse("Success")
         else:
             return HttpResponse("Abort")
+        
     else :
         return HttpResponse("Abort")
+
+def create_message():
+    msg=Message.objects.create()
+    msg.mid=settings.SERVER_ID_OCTOKART+":"+str(msg.id)    
+    msg.save()
+    return msg
 
 # Create your views here.
 def add_connection(request):
