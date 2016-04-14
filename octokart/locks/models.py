@@ -22,6 +22,7 @@ class ItemQueue(models.Model):
         return str(self.item_id)+":"+self.transaction_id
 
 class SellerLock(models.Model):
+
     transaction_id=models.TextField();
     seller_id = models.IntegerField(default=0)
 
