@@ -28,8 +28,12 @@ class TransactionLog(models.Model):
     timestamp = models.IntegerField()
 
     def __str__(self):
-        return "%d : <Transaction = %s, Seller = %d, Data = %d, Oldvalue = %d, Newvalue = %d>" %
+        return "%d : <Transaction = %s, Seller = %d, Data = %d, Oldvalue = %d, Newvalue = %d>" % \
             (self.timestamp, self.transaction_id, self.seller_id, self.data_id, self.oldvalue, self.newvalue)
+
+    def describe(self):
+        return "Transaction %s updates quantity of data %d, sold by seller %d, from %d to %d" % \
+                (self.transaction_id, self.data_id, self.seller_id, self.oldvalue, self.newvalue)
 
 class CommitLog(models.Model):
 
@@ -40,6 +44,9 @@ class CommitLog(models.Model):
     def __str__(self):
         return "%d : <Transaction = %s, operation = %s>" % (self.timestamp, self.transaction_id,
             self.operation)
+
+    def describe(self):
+        return "Commit Log"
 
 class LockLog(models.Model):
 
@@ -58,6 +65,9 @@ class LockLog(models.Model):
             return "%d : <Transaction = %s, SENDING %s TO %s>" % (self.timestamp, self.transaction_id,
                     self.operation, self.site_id)
 
+    def describe(self):
+        return "Lock Log"
+
 class LoginLog(models.Model):
 
 #    mode = True means login, mode = False means logout
@@ -70,4 +80,7 @@ class LoginLog(models.Model):
             return "%d : <Seller %d HAS LOGGED IN>" % (self.timestamp, self.seller_id)
         else:
             return "%d : <Seller %d HAS LOGGED OUT>" % (self.timestamp, self.seller_id)
+
+    def describe(self):
+        return "Login Log"
 
