@@ -35,4 +35,3 @@ class ItemLock(models.Model):
     def __unicode__(self):
         return str(self.item_id)+":"+self.transaction_id
 
-

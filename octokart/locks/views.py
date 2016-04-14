@@ -320,7 +320,6 @@ def seller_release(request=None, msg=None, seller_passed=None):
         
         return HttpResponse("Abort")
 
-
 def seller_empty(request):
     SellerQueue.objects.all().delete()
     SellerLock.objects.all().delete()
