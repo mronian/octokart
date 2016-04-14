@@ -14,8 +14,8 @@ $.ajaxSetup({
 function generate_table_item(item, key) {
     open="<tr><td>";
     content=key+"</td><td>";
-    content+=item['name']+"</td><td>";
-    content+=item['desc']+"</td><td>";
+    content+=item['name']+"</td id=\"item_name\"><td>";
+    content+=item['desc']+"</td id=\"item_desc\"><td>";
     content+="<input class=\"input item-num\" type=\"text\" value=\"0\" id=\""+key+"\">"+"</td><td>";
     close="</td></tr>";
     return open+content+close;
@@ -65,14 +65,22 @@ $('document').ready(function(){
     
     $(document).on('blur','.item-num',function(event){
             id=$(this).attr("id");
+            console.log(id);
             selected_items[id]=$(this).val();
+            console.log($(this).val());
         });
     
     $('#synccat').click(function(event){
+        var data_dict = {};
+        selected_items[0] = $('#seller_id').val();
+        console.log($('#seller_id').val());
+        console.log(selected_items)
+
           var ajaxRequest = $.ajax({
                         url : "http://127.0.0.1:5000/seller/sync_catalogue/", // the endpoint
                         type : "GET", // http method
                         contentType: "application/json",
+                        datatype:"json",
                         data : selected_items,
                         success : function(){
                             $('#synccat').html("Re-Sync");
