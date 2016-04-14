@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'store',
     'upvotes',
     'seller',
+    'locks',
     'corsheaders'
 ]
 
