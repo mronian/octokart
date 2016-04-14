@@ -28,6 +28,7 @@ def seller_request(request):
     pass
 
 def seller_release(request):
+
     pass
 
 @csrf_exempt
