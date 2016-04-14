@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponse
 from models import SellerQueue, ItemQueue, SellerLock, ItemLock
@@ -11,10 +10,6 @@ from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
 from threading import Thread, Lock
 from seller.models import SellerItem
-=======
-from django.shortcuts import render
-from models import SellerQueue, ItemQueue
->>>>>>> Adding new models to lock
 # Create your views here.
 
 mutex=Lock()
