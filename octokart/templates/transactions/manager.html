@@ -3,9 +3,12 @@
 <h1>Connections Manager</h1>
 <form id="connForm" action="/transactions/connections_manager/add_connection/" method="post">
     {% csrf_token %}
-<input type="text" placeholder="ENTER IP" name="ip"><input type="text" placeholder="ENTER PORT" name="port"><button type="submit" id="add-connection">Add</button>
+    <input type="text" placeholder="ENTER IP" name="ip" value="10.109.9.63">
+    <input type="text" placeholder="ENTER PORT" name="port">
+    <button type="submit" id="add-connection">Add</button>
 </form>
 <button id="delete-connections" onclick="location.href='/transactions/connections_manager/delete_connections/';">Delete All Connections</button>
+<button id="perform-transaction" onclick="location.href='/transactions/perform_transaction/';">Perform Transaction</button>
 <hr>
 <ul>
 {% for conn in connections %}

@@ -10,3 +10,11 @@ class Connection(models.Model):
     
     def __unicode__(self):
             return self.ip+":"+self.port
+        
+
+class Message(models.Model):
+    
+    mid=models.TextField()
+    
+    def __unicode__(self):
+            return self.mid        

@@ -43,4 +43,3 @@ then
     python manage.py migrate
 fi
 cd ~/Documents/Repositories/octokart
-say Task Completed;
