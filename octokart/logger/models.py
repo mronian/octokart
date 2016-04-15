@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.conf import settings
 from enum import Enum
 
 class Operation(Enum):
@@ -10,6 +11,7 @@ class Operation(Enum):
     no = "NO"
     commit = "COMMIT"
     abort = "ABORT"
+
     lockrequest = "REQUEST LOCK"
     lockgrant = "GRANT LOCK"
     lockdeny = "DENY LOCK"
@@ -46,7 +48,7 @@ class CommitLog(models.Model):
             self.operation)
 
     def describe(self):
-        return "Commit Log"
+        return "Transaction %s : %s" % (self.transaction_id, self.operation)
 
 class LockLog(models.Model):
 
@@ -66,7 +68,32 @@ class LockLog(models.Model):
                     self.operation, self.site_id)
 
     def describe(self):
-        return "Lock Log"
+        if self.mode == False:
+            if self.operation == Operation.lockrequest:
+                return "Sent lock request for transaction %s to site %s" % (self.transaction_id, 
+                    self.site_id)
+            elif self.operation == Operation.lockgrant:
+                return "Granted lock request for transaction %s to site %s" % (self.transaction_id, 
+                    self.site_id)
+            elif self.operation == Operation.lockdeny:
+                return "Denied lock request for transaction %s to site %s" % (self.transaction_id, 
+                    self.site_id)
+            elif self.operation == Operation.lockrelease:
+                return "Released lock for transaction %d on site %s" % (self.transaction_id, 
+                    self.site_id)
+        else:
+            if self.operation == Operation.lockrequest:
+                return "Received lock request for transaction %s from site %s" % (self.transaction_id, 
+                    self.site_id)
+            elif self.operation == Operation.lockgrant:
+                return "Granted lock request for transaction %s from site %s" % (self.transaction_id, 
+                    self.site_id)
+            elif self.operation == Operation.lockdeny:
+                return "Denied lock request for transaction %s from site %s" % (self.transaction_id, 
+                    self.site_id)
+            elif self.operation == Operation.lockrelease:
+                return "Released lock for transaction %d by site %s" % (self.transaction_id, 
+                    self.site_id)
 
 class LoginLog(models.Model):
 
@@ -82,5 +109,100 @@ class LoginLog(models.Model):
             return "%d : <Seller %d HAS LOGGED OUT>" % (self.timestamp, self.seller_id)
 
     def describe(self):
-        return "Login Log"
+        if self.mode == True:
+            return "Seller %d has logged in" % self.seller_id
+        else:
+            return "Seller %d has logged out" % self.seller_id
+
+class Message(models.Model):
+
+    msg_id = models.CharField(max_length = 50)
+
+    def __str__(self):
+        return "Msg Id = %s" % (self.msg_id)
+
+class Timestamp(models.Model):
+
+    timestamp = models.IntegerField(default = 0)
+
+    def __str__(self):
+        return "timestamp = %d" % self.timestamp
+
+def resetTime():
+    Timestamp.objects.all().delete()
+
+def getTime():
+    if Timestamp.objects.count() == 0:
+        t = Timestamp(timestamp = 1)
+        t.save()
+    else:
+        t = Timestamp.objects.all()[0]
+        t.timestamp += 1
+        t.save()
+    return t.timestamp
+
+def updateTime(timestamp):
+    if Timestamp.objects.count() == 0:
+        t = Timestamp(timestamp = timestamp)
+        t.save()
+    else:
+        t = Timestamp.objects.all()[0]
+        t.timestamp = max(t.timestamp, timestamp)
+        t.save()
+
+def getlogs():
+    rawtransactionlogs = TransactionLog.objects.all()
+    rawcommitlogs = CommitLog.objects.all()
+    rawlocklogs = LockLog.objects.all()
+    rawloginlogs = LoginLog.objects.all()
+
+    logs = [[rawtransactionlog.timestamp, rawtransactionlog.describe()] \
+                       for rawtransactionlog in rawtransactionlogs]
+    logs.extend([[rawcommitlog.timestamp, rawcommitlog.describe()] \
+                           for rawcommitlog in rawcommitlogs])
+    logs.extend([[rawlocklog.timestamp, rawlocklog.describe()] \
+                   for rawlocklog in rawlocklogs])
+    logs.extend([[rawloginlog.timestamp, rawloginlog.describe()] \
+                       for rawloginlog in rawloginlogs])
+                       
+    logs = sorted(logs, key = lambda log: log[0], reverse = True)
+    return logs
+
+def getlogsdict():
+    logs = getlogs()
+    data = {}
+    i = 1
+    for log in logs:
+        data[str(i) + settings.SERVER_PORT] = \
+        {"timestamp" : log[0], "describe" : log[1], \
+        "site" : settings.SERVER_IP + ":" + settings.SERVER_PORT}
+        i += 1
+    return data
+
+def clearalllogs():
+    TransactionLog.objects.all().delete()
+    CommitLog.objects.all().delete()
+    LockLog.objects.all().delete()
+    LoginLog.objects.all().delete()
+
+def writetransactionlog(transaction_id, seller_id ,data_id, oldvalue, newvalue):
+    log = TransactionLog(transaction_id = transaction_id, data_id = data_id, seller_id = seller_id,
+        oldvalue = oldvalue, newvalue = newvalue, timestamp = getTime())
+    log.save()
+
+def writecommitlog(transaction_id, operation):
+    log = CommitLog(transaction_id = transaction_id, operation = operation, timestamp = getTime())
+    log.save()
+
+def writelocklog(transaction_id, operation, site_id, mode):
+    log = LockLog(transaction_id = transaction_id, operation = operation, site_id = site_id, 
+        mode = mode, timestamp = getTime())
+    log.save()
+
+def writeloginlog(seller_id, mode):
+    log = LoginLog(seller_id = seller_id, mode = mode)
+    log.save()
+
+
+
 
