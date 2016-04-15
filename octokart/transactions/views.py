@@ -8,6 +8,7 @@ from urllib2 import urlopen, URLError, HTTPError
 from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
 from locks.views import items_request, items_release
+from locks.view import seller_request, seller_release
 from seller.models import SellerItem, CatalogueItem
 from django.contrib.auth.models import User
 from flood import flood
@@ -26,12 +27,14 @@ def receive_connection(request):
     return HttpResponse("Connection Added")
 
 @csrf_exempt
-def prepare_for_commit(request=None, msg=None, item=None):
+def prepare_for_commit(request=None, msg=None, item=None, seller=None):
     print "ENTERED PRECOMMIT"
     t_type=None
     item_iid=None
     item_sid=None
     item_q=None
+    seller_uid=None
+    seller_pwd=None
 
     if request!=None:
         
@@ -47,8 +50,10 @@ def prepare_for_commit(request=None, msg=None, item=None):
             item_sid=request.POST['item_seller_id']
             item_q=request.POST['item_quantity']
             item=SellerItem(item_id=CatalogueItem.objects.get(id=item_iid), seller_id=User.objects.get(id=item_sid), quantity=item_q)
-        
-        
+        elif t_type=="seller":
+            seller_uid=request.POST['seller_uid']
+            seller_pwd=request.POST['seller_pwd']
+            seller = User(username=seller_uid, password=seller_pwd)
         try:
             msg = Message.objects.get(mid=msg_id)
             print "MESSAGE "+str(msg)+" ALREADY SEEN AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport
@@ -65,12 +70,19 @@ def prepare_for_commit(request=None, msg=None, item=None):
             item_iid=item.item_id.id
             item_sid=item.seller_id.id
             item_q=item.quantity
+        else:
+            t_type="seller"
+            seller_uid=seller.username
+            seller_pwd = seller.pwd
+
         
     print "PREPARING FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
     params=None
     if t_type=="items":
         params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, trans_type=t_type, item_item_id=item_iid, item_seller_id=item_sid, item_quantity=item_q)
-    
+    elif t_type=="seller":
+        params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, trans_type=t_type, seller_uid=seller_uid, seller_pwd=seller_pwd)
+
     encoded_params = urlencode(params)
     reply={}
     reply=flood(mip, mport, "/transactions/prepare/", encoded_params, msg, "PRECOMMIT", reply)
@@ -82,8 +94,10 @@ def prepare_for_commit(request=None, msg=None, item=None):
             break
     
     if result==True:
-        
-        item.save()
+        if t_type=='item':
+            item.save()
+        elif t_type=='seller':
+            seller.save()
         
         print "READY FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
         
@@ -139,6 +153,8 @@ def release_locks(msg, table_to_lock):
     
     if table_to_lock=="items":
         response=items_release(None, msg, 1)
+    elif table_to_lock=="seller":
+        response=seller_release(None, msg, 1)
     
     print "RELEASED LOCKS FROM ALL CONNECTIONS FOR TABLE:"+table_to_lock
     
@@ -154,6 +170,9 @@ def acquire_locks(msg, table_to_lock):
         print "ATTEMPT "+str(i+1)+" TO GET LOCKS FROM COORDINATOR"
         if table_to_lock=="items":
             response=items_request(None, msg, 1, 1, i, msg.mid)
+        elif table_to_lock=="seller":
+            seller_name = "sabya"
+            response=seller_request(None, msg, seller_id, 1, i, msg.mid)
         
         if response.getvalue()=="Success":
             
@@ -173,9 +192,12 @@ def acquire_locks(msg, table_to_lock):
     return "Abort"
     
 @csrf_exempt
-def perform_transaction(request=None, trans_type_id=1, item=None):
-    
-    item=SellerItem(item_id=CatalogueItem.objects.get(id=1), seller_id=User.objects.get(id=1), quantity=50)
+def perform_transaction(request=None, seller=None, item=None):
+    if item!=None:
+        trans_type_id=1
+    else:
+        trans_type_id=0
+    # item=SellerItem(item_id=CatalogueItem.objects.get(id=1), seller_id=User.objects.get(id=1), quantity=50)
     
     #trans_type=int(request.POST["trans_type"])
     table_to_lock=transaction_type[trans_type_id]
