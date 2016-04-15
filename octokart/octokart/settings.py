@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 import os
 import sys
-import socket
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,14 +31,9 @@ DEBUG = True
 ALLOWED_HOSTS = []
 CORS_ORIGIN_ALLOW_ALL = True
 
-if sys.argv[1]=="runserver":
-    SERVER_ID_OCTOKART = sys.argv[2]
-    SERVER_PORT=SERVER_ID_OCTOKART.split(":")[1]
-else :
-    SERVER_ID_OCTOKART=""
-    SERVER_PORT="4"
-
-SERVER_IP = socket.gethostbyname(socket.gethostname())
+SERVER_ID_OCTOKART=""
+SERVER_PORT=""
+SERVER_IP=""
 
 LOGIN_URL = '/'
 # Application definition
@@ -104,7 +98,7 @@ WSGI_APPLICATION = 'octokart.wsgi.application'
 DATABASES = {
     'default': {
             'ENGINE': 'django.db.backends.mysql', 
-            'NAME': 'octokart'+SERVER_PORT[-1],
+            'NAME': 'octokart',
             'USER': 'octokart',
             'PASSWORD': 'octokart',
             'HOST': 'localhost',   # Or an IP Address that your DB is hosted on

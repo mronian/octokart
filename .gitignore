@@ -2,7 +2,7 @@
 2000*
 3000*
 4000*
-*/migrations/*
+/octokart/*/migrations/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

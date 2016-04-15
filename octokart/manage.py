@@ -8,13 +8,12 @@ if __name__ == "__main__":
 
 	from django.core.management import execute_from_command_line
 
-	# if sys.argv[1] == 'runserver':
-	# 	settings.SERVER_IP, settings.SERVER_PORT = sys.argv[2].split(":")
-	# 	settings.DATABASES['default']['NAME'] += settings.SERVER_PORT
-	# 	execute_from_command_line(sys.argv)
-	# else:
-	# 	settings.SERVER_PORT = sys.argv[len(sys.argv) - 1]
-	# 	settings.DATABASES['default']['NAME'] += settings.SERVER_PORT
-	# 	execute_from_command_line(sys.argv[:-1])
-
-	execute_from_command_line(sys.argv)
+	if sys.argv[1] != "runserver":
+		settings.SERVER_PORT = sys.argv[len(sys.argv) - 1]
+		settings.DATABASES["default"]['NAME'] = "octokart" + settings.SERVER_PORT[-1]
+		execute_from_command_line(sys.argv[:-1])
+	else:
+		settings.SERVER_ID_OCTOKART = sys.argv[2]
+		settings.SERVER_IP, settings.SERVER_PORT=settings.SERVER_ID_OCTOKART.split(":")	
+		settings.DATABASES["default"]['NAME'] = "octokart"+ settings.SERVER_PORT[-1]
+		execute_from_command_line(sys.argv)
