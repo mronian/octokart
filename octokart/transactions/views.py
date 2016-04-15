@@ -83,16 +83,21 @@ def acquire_locks(msg, table_to_lock):
     print "REQUESTING LOCKS FOR TABLE:"+table_to_lock
     
     if table_to_lock=="items":
-        response=items_request(None, msg, 1)
+        response=items_request(None, msg, 1, 1)
     
     if response.getvalue()=="Success":
-        print "ACQUIRED LOCKS FROM ALL CONNECTIONS FOR TABLE:"+table_to_lock
         
-        return "Success"
-    else:
-        print "LOCKS COULD NOT BE ACQUIRED"
+        response=items_request(None, msg, 1, 2)
         
-        return "Abort"
+        if response.getvalue()=="Success":
+            
+            print "ACQUIRED LOCKS FROM ALL CONNECTIONS FOR TABLE:"+table_to_lock
+        
+            return "Success"
+    
+    print "LOCKS COULD NOT BE ACQUIRED"
+    
+    return "Abort"
     
 @csrf_exempt
 def perform_transaction(request):

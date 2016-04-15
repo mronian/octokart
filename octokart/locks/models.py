@@ -7,6 +7,7 @@ class SellerQueue(models.Model):
     
     seller_id=models.IntegerField(default=0)
     transaction_id=models.TextField()
+    seq_id=models.IntegerField(default=0)
     
     def __unicode__(self):
         return str(self.seller_id)+":"+self.transaction_id
@@ -15,6 +16,7 @@ class ItemQueue(models.Model):
     
     item_id=models.IntegerField(default=0)
     transaction_id=models.TextField()
+    seq_id=models.IntegerField(default=0)
     
     def __unicode__(self):
         return str(self.item_id)+":"+self.transaction_id

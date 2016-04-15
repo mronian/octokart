@@ -27,12 +27,13 @@ def seller_release(request):
     pass
 
 @csrf_exempt
-def items_request(request=None, msg=None, item_passed=None):
+def items_request(request=None, msg=None, item_passed=None, curphase=1):
     if request!=None:
         msg_id=request.POST["message"]
         mip=request.POST["ip"]
         mport=request.POST['port']
         item=request.POST['item']
+        phase=request.POST["phase"]
         
         try:
             msg = Message.objects.get(mid=msg_id)
@@ -46,20 +47,23 @@ def items_request(request=None, msg=None, item_passed=None):
         mip=settings.SERVER_IP
         mport=settings.SERVER_PORT
         item=item_passed
+        phase=curphase
         
-    print "TRYING LOCK AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item)
+    print "TRYING LOCK AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item) +" IN PHASE "+str(phase)
     transaction=msg.mid
     
-    try:
-        item_queue_inst = ItemQueue.objects.get(transaction_id=transaction)
-        print "TRANSACTION ALREADY QUEUED IN ITEMQUEUE AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport+" with transaction_id "+str(transaction_id)
-    except ItemQueue.DoesNotExist:
-        item_queue_inst=ItemQueue.objects.create(item_id=item,transaction_id=transaction);
-        item_queue_inst.save()
+    if phase==1:
+        try:
+            item_queue_inst = ItemQueue.objects.get(transaction_id=transaction)
+            print "TRANSACTION ALREADY QUEUED IN ITEMQUEUE AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport+" with transaction_id "+str(transaction_id)
+        except ItemQueue.DoesNotExist:
+            item_queue_inst=ItemQueue.objects.create(item_id=item,transaction_id=transaction);
+            item_queue_inst.save()
+    
+    elif phase==2:
+        grant_item_lock()
         
-    grant_item_lock()
-        
-    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, item=item)
+    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, item=item, phase=phase)
     encoded_params = urlencode(params)
     reply={}
     reply=flood(mip, mport, "/locks/items/request/", encoded_params, msg, "TRYLOCK", reply)
@@ -71,31 +75,35 @@ def items_request(request=None, msg=None, item_passed=None):
             break
     
     if result==True:
-        print "ALL SUBLOCKS ACQUIRED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item)
+        print "ALL SUBLOCKS ACQUIRED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item) +" IN PHASE "+str(phase)
         
         return HttpResponse("Success")
     else :
-        print "TRYLOCK ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item)
+        print "TRYLOCK ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item) +" IN PHASE "+str(phase)
         
         return HttpResponse("Abort")
-
+    
 def grant_item_lock():
     lock_status=ItemLock.objects.all()
     
     if not lock_status:
         print ItemQueue.objects.order_by('id')
-        item_to_be_locked=ItemQueue.objects.order_by('id')[0]
-        lock=ItemLock.objects.create(transaction_id=item_to_be_locked.transaction_id, item_id=item_to_be_locked.item_id)
-        lock.save()
-        item_to_be_locked.delete()
+        item_to_be_locked=ItemQueue.objects.order_by('id')
+        if item_to_be_locked.exists():
+            item_to_be_locked=item_to_be_locked[0]
+            lock=ItemLock.objects.create(transaction_id=item_to_be_locked.transaction_id, item_id=item_to_be_locked.item_id)
+            lock.save()
+            item_to_be_locked.delete()
         print lock
         
 def release_item_lock():
     ItemLock.objects.all().delete()
-    item_to_be_locked=ItemQueue.objects.order_by('id')[0]
-    lock=ItemLock.objects.create(transaction_id=item_to_be_locked.transaction_id, item_id=item_to_be_locked.item_id)
-    lock.save()
-    item_to_be_locked.delete()
+    item_to_be_locked=ItemQueue.objects.order_by('id')
+    if item_to_be_locked.exists():
+        item_to_be_locked=item_to_be_locked[0]
+        lock=ItemLock.objects.create(transaction_id=item_to_be_locked.transaction_id, item_id=item_to_be_locked.item_id)
+        lock.save()
+        item_to_be_locked.delete()
     
 @csrf_exempt
 def items_release(request=None, msg=None, item_passed=None):
@@ -145,8 +153,10 @@ def items_release(request=None, msg=None, item_passed=None):
 
 def items_empty(request):
     ItemQueue.objects.all().delete()
+    ItemLock.objects.all().delete()
     return redirect('/transactions/connections_manager/')
 
 def seller_empty(request):
     SellerQueue.objects.all().delete()
+    SellerLock.objects.all().delete()
     return redirect('/transactions/connections_manager/')
