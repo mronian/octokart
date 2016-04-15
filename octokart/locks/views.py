@@ -9,6 +9,7 @@ from urllib2 import urlopen, URLError, HTTPError
 from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
 from threading import Thread, Lock
+from seller.models import SellerItem
 # Create your views here.
 
 mutex=Lock()
@@ -77,8 +78,8 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
             t.start()
             t.join()
             lock=ItemLock.objects.all()[0]
-            if settings.SERVER_PORT=="5002" and attempt<2:
-                lock=ItemLock.objects.create(transaction_id="FAILING", item_id=3)
+            #if settings.SERVER_PORT=="5002" and attempt<2:
+            #    lock=ItemLock.objects.create(transaction_id="FAILING", item_id=3)
             if lock.transaction_id==transaction:
                 break
             
@@ -105,6 +106,8 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
         
         return HttpResponse("Success")
     else :
+        
+        release_item_lock()
         print "TRYLOCK ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item) +" IN PHASE "+str(phase)
         
         return HttpResponse("Abort")
@@ -179,6 +182,8 @@ def items_release(request=None, msg=None, item_passed=None):
 def items_empty(request):
     ItemQueue.objects.all().delete()
     ItemLock.objects.all().delete()
+    SellerItem.objects.all().delete()
+    
     return redirect('/transactions/connections_manager/')
 
 def seller_empty(request):

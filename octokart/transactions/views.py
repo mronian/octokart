@@ -8,6 +8,8 @@ from urllib2 import urlopen, URLError, HTTPError
 from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
 from locks.views import items_request, items_release
+from seller.models import SellerItem, CatalogueItem
+from django.contrib.auth.models import User
 from flood import flood
 import time
 
@@ -24,11 +26,27 @@ def receive_connection(request):
     return HttpResponse("Connection Added")
 
 @csrf_exempt
-def prepare_for_commit(request=None, msg=None):
+def prepare_for_commit(request=None, msg=None, item=None):
+    print "ENTERED PRECOMMIT"
+    t_type=None
+    item_iid=None
+    item_sid=None
+    item_q=None
     if request!=None:
-        msg_id=request.POST["message"]
-        mip=request.POST["ip"]
+        
+        print request.POST
+        msg_id=request.POST['message']
+        mip=request.POST['ip']
         mport=request.POST['port']
+        t_type=request.POST[u'trans_type']
+        
+        
+        if t_type=="items":
+            item_iid=request.POST['item_item_id']
+            item_sid=request.POST['item_seller_id']
+            item_q=request.POST['item_quantity']
+            item=SellerItem(item_id=CatalogueItem.objects.get(id=item_iid), seller_id=User.objects.get(id=item_sid), quantity=item_q)
+        
         
         try:
             msg = Message.objects.get(mid=msg_id)
@@ -41,9 +59,17 @@ def prepare_for_commit(request=None, msg=None):
         mip=settings.SERVER_IP
         mport=settings.SERVER_PORT
         
+        if item!=None:
+            t_type="items"
+            item_iid=item.item_id.id
+            item_sid=item.seller_id.id
+            item_q=item.quantity
+        
     print "PREPARING FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
+    params=None
+    if t_type=="items":
+        params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, trans_type=t_type, item_item_id=item_iid, item_seller_id=item_sid, item_quantity=item_q)
     
-    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid)
     encoded_params = urlencode(params)
     reply={}
     reply=flood(mip, mport, "/transactions/prepare/", encoded_params, msg, "PRECOMMIT", reply)
@@ -55,6 +81,9 @@ def prepare_for_commit(request=None, msg=None):
             break
     
     if result==True:
+        
+        item.save()
+        
         print "READY FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
         
         return HttpResponse("Success")
@@ -143,9 +172,10 @@ def acquire_locks(msg, table_to_lock):
     return "Abort"
     
 @csrf_exempt
-def perform_transaction(request):
+def perform_transaction(request=None, trans_type_id=1, item=None):
     
-    trans_type_id=1
+    item=SellerItem(item_id=CatalogueItem.objects.get(id=1), seller_id=User.objects.get(id=1), quantity=50)
+    
     #trans_type=int(request.POST["trans_type"])
     table_to_lock=transaction_type[trans_type_id]
     
@@ -154,15 +184,14 @@ def perform_transaction(request):
     locked=acquire_locks(msg, table_to_lock)
     if locked=="Success":
         msg=create_message()
-        response=prepare_for_commit(None, msg)
-        response=HttpResponse("Success")  
+        response=prepare_for_commit(None, msg, item)
         
         if response.getvalue()=="Success":
-            response=commit(None, msg)
-        
+            #response=commit(None, msg)
+            
             msg=create_message()    
             release_locks(msg, table_to_lock)
-    
+        
             if response.getvalue()=="Success":
                 return HttpResponse("Success")
         
