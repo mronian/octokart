@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 align = "center">{{ item_name }}</h1>
+<h2 align = "center"> Sellers </h2>
+<div class="container">
+	<table class="table">
+			<th>Seller Name</th>
+			<th>Number Of items</th> 
+			<th>Quantity to buy</th>
+			<th>Buy</th>
+			{% for item in items %}
+				 <tr>
+					<td>{{ item.0 }}</td>
+					<td id="av-{{ item.0 }}">{{ item.1 }}</td>
+					<td><input class="input item-num" id="q-{{ item.0 }}" type="text" value="1"></td>
+					<td><button class="btn-primary buy_btn" key="{{ item_id }}" keys="{{ item.0 }}" id="b-{{ item_id }}">Buy</button></td>	
+				 </tr>
+			{%endfor%}
+	</table>
+</div>
+{% endblock %}

@@ -8,8 +8,10 @@ from seller.models import SellerItem
 from seller.models import CatalogueItem
 # Create your views here.
 def get_index(request):
-	context = {}
-	return render(request, 'store_index.html',context)
+        context = {}
+        print "get index"
+        return render(request, 'store/store_index.html',context)
+    
 def get_item(request, item_id):
 	items = SellerItem.objects.filter(item_id=item_id)
 	catalog = CatalogueItem.objects.get(id=item_id)
@@ -19,4 +21,25 @@ def get_item(request, item_id):
 	context = {'item_id': int(item_id), 'item_name': str(catalog.name),  'item_desc' : str(catalog.desc), 'upvotes' : catalog.upvotes, 'items': item_list}
 	print context
 	print item_id
-	return render(request, 'specific_item.html',context)
+	return render(request, 'store/specific_item.html',context)
+
+def get_catalogue(request):
+    # user = request.user
+    # if user.is_active == 1:
+    print "get_catalogue"
+    cataloguedb = CatalogueItem.objects.all()
+    catalogue={}
+    items = {}
+
+    for c in cataloguedb:
+        selleritemdb = SellerItem.objects.filter(item_id=c)
+        sum1 = 0
+        for s in selleritemdb:
+             print s.quantity
+             print s
+             sum1 += s.quantity
+        catalogue[c.id]={'name':c.name, 'desc':c.desc, 'upvotes':c.upvotes, 'quantity':sum1}
+    return JsonResponse(catalogue)
+    # else:
+    #     print "User not authenticated"
+    #     return JsonResponse({"failure":"failure"})

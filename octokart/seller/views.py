@@ -23,6 +23,7 @@ def get_catalogue(request):
         sum1 = 0
         for s in selleritemdb:
              print s.quantity
+             print s
              sum1 += s.quantity
         catalogue[c.id]={'name':c.name, 'desc':c.desc, 'upvotes':c.upvotes, 'quantity':sum1}
     return JsonResponse(catalogue)
