@@ -9,6 +9,7 @@ from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
 from locks.views import items_request, items_release
 from flood import flood
+import time
 
 socket.setdefaulttimeout( 23 )  # timeout in seconds
 
@@ -31,7 +32,47 @@ def prepare_for_commit(request=None, msg=None):
         
         try:
             msg = Message.objects.get(mid=msg_id)
-            print "MESSAGE ALREADY SEEN AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport
+            print "MESSAGE "+str(msg)+" ALREADY SEEN AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport
+            return HttpResponse("Seen")
+        except Message.DoesNotExist:
+            msg=Message.objects.create(mid=msg_id)  
+            msg.save() 
+    else :
+        mip=settings.SERVER_IP
+        mport=settings.SERVER_PORT
+        
+    print "PREPARING FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
+    
+    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid)
+    encoded_params = urlencode(params)
+    reply={}
+    reply=flood(mip, mport, "/transactions/prepare/", encoded_params, msg, "PRECOMMIT", reply)
+    
+    result=True
+    for v in reply.values():
+        if v=="Abort":
+            result=False
+            break
+    
+    if result==True:
+        print "READY FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
+        
+        return HttpResponse("Success")
+    else :
+        print "PRECOMMIT ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
+        
+        return HttpResponse("Abort")
+
+@csrf_exempt
+def commit(request=None, msg=None):
+    if request!=None:
+        msg_id=request.POST["message"]
+        mip=request.POST["ip"]
+        mport=request.POST['port']
+        
+        try:
+            msg = Message.objects.get(mid=msg_id)
+            print "MESSAGE "+str(msg)+" ALREADY SEEN AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport
             return HttpResponse("Seen")
         except Message.DoesNotExist:
             msg=Message.objects.create(mid=msg_id)  
@@ -45,7 +86,7 @@ def prepare_for_commit(request=None, msg=None):
     params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid)
     encoded_params = urlencode(params)
     reply={}
-    reply=flood(mip, mport, "/transactions/prepare/", encoded_params, msg, "PRECOMMIT", reply)
+    reply=flood(mip, mport, "/transactions/prepare/", encoded_params, msg, "COMMIT", reply)
     
     result=True
     for v in reply.values():
@@ -61,12 +102,8 @@ def prepare_for_commit(request=None, msg=None):
         print "COMMIT ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
         
         return HttpResponse("Abort")
-
-@csrf_exempt
-def commit(request):
     
-    pass
-
+    
 def release_locks(msg, table_to_lock):
     print "RELEASING LOCKS FOR TABLE:"+table_to_lock
     
@@ -82,19 +119,25 @@ def acquire_locks(msg, table_to_lock):
     
     print "REQUESTING LOCKS FOR TABLE:"+table_to_lock
     
-    if table_to_lock=="items":
-        response=items_request(None, msg, 1, 1)
-    
-    if response.getvalue()=="Success":
+    for i in range(3):
         
-        response=items_request(None, msg, 1, 2)
+        print "ATTEMPT "+str(i+1)+" TO GET LOCKS FROM COORDINATOR"
+        if table_to_lock=="items":
+            response=items_request(None, msg, 1, 1, i, msg.mid)
         
         if response.getvalue()=="Success":
             
-            print "ACQUIRED LOCKS FROM ALL CONNECTIONS FOR TABLE:"+table_to_lock
-        
-            return "Success"
-    
+                msg2=create_message()
+                response=items_request(None, msg2, 1, 2, i, msg.mid)
+                
+                if response.getvalue()=="Success":
+                    
+                    print "ACQUIRED LOCKS FROM ALL CONNECTIONS FOR TABLE:"+table_to_lock
+                
+                    return "Success"
+                
+                time.sleep(0.5)
+            
     print "LOCKS COULD NOT BE ACQUIRED"
     
     return "Abort"
@@ -109,21 +152,21 @@ def perform_transaction(request):
     msg=create_message()
     
     locked=acquire_locks(msg, table_to_lock)
-    
     if locked=="Success":
         msg=create_message()
         response=prepare_for_commit(None, msg)
-
-        msg=create_message()    
-        release_locks(msg, table_to_lock)
-
-        if response.getvalue()=="Success":
-            return HttpResponse("Success")
-        else:
-            return HttpResponse("Abort")
+        response=HttpResponse("Success")  
         
-    else :
-        return HttpResponse("Abort")
+        if response.getvalue()=="Success":
+            response=commit(None, msg)
+        
+            msg=create_message()    
+            release_locks(msg, table_to_lock)
+    
+            if response.getvalue()=="Success":
+                return HttpResponse("Success")
+        
+    return HttpResponse("Abort")
 
 def create_message():
     msg=Message.objects.create()

@@ -37,7 +37,7 @@ if sys.argv[1]=="runserver":
 else :
     SERVER_ID_OCTOKART=""
     SERVER_IP=""
-    SERVER_PORT="1"
+    SERVER_PORT="4"
 
 
 LOGIN_URL = '/'

@@ -28,7 +28,7 @@ class SellerLock(models.Model):
     def __unicode__(self):
         return str(self.item_id)+":"+self.transaction_id
 
-class ItemLock(models.Model):
+class ItemLock(models.Model): 
     transaction_id=models.TextField();
     item_id = models.IntegerField(default=0)
     
