@@ -26,6 +26,7 @@ def receive_connection(request):
     
     return HttpResponse("Connection Added")
 
+
 @csrf_exempt
 def prepare_for_commit(request=None, msg=None, item=None, seller=None):
     print "ENTERED PRECOMMIT"

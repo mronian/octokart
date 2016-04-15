@@ -15,12 +15,16 @@ def get_catalogue(request):
     # if user.is_active == 1:
     print "get_catalogue"
     cataloguedb = CatalogueItem.objects.all()
-    
     catalogue={}
-    
+    items = {}
+
     for c in cataloguedb:
-        catalogue[c.id]={'name':c.name, 'desc':c.desc, 'upvotes':c.upvotes}
-    
+        selleritemdb = SellerItem.objects.filter(item_id=c)
+        sum1 = 0
+        for s in selleritemdb:
+             print s.quantity
+             sum1 += s.quantity
+        catalogue[c.id]={'name':c.name, 'desc':c.desc, 'upvotes':c.upvotes, 'quantity':sum1}
     return JsonResponse(catalogue)
     # else:
     #     print "User not authenticated"

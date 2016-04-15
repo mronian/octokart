@@ -4,7 +4,6 @@ from django.db import models
     # Create your models here.
 
 class SellerQueue(models.Model):
-
     seller_id=models.IntegerField(default=0)
     transaction_id=models.TextField()
     seq_id=models.IntegerField(default=0)
@@ -13,7 +12,6 @@ class SellerQueue(models.Model):
         return str(self.seller_id)+":"+self.transaction_id
 
 class ItemQueue(models.Model):
-
     item_id=models.IntegerField(default=0)
     transaction_id=models.TextField()
     seq_id=models.IntegerField(default=0)
@@ -34,5 +32,4 @@ class ItemLock(models.Model):
 
     def __unicode__(self):
         return str(self.item_id)+":"+self.transaction_id
-
 
