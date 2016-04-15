@@ -98,7 +98,7 @@ WSGI_APPLICATION = 'octokart.wsgi.application'
 DATABASES = {
     'default': {
             'ENGINE': 'django.db.backends.mysql', 
-            'NAME': 'octokart',
+            'NAME': 'octokart4',
             'USER': 'octokart',
             'PASSWORD': 'octokart',
             'HOST': 'localhost',   # Or an IP Address that your DB is hosted on
