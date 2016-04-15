@@ -10,8 +10,7 @@ from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
 from threading import Thread, Lock
 from seller.models import SellerItem
-
-from logger.models import writetransactionlog, writecommitlog, writelocklog, writeloginlog
+from logger.models import writetransactionlog, writecommitlog, writelocklog, writeloginlog, clearalllogs
 from logger.models import getTime, updateTime
 from logger.models import Operation
 # Create your views here.
@@ -73,7 +72,7 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
             #if settings.SERVER_PORT=="5002" and attempt<2:
             #    lock=ItemLock.objects.create(transaction_id="FAILING", item_id=3)
             if lock.transaction_id==transaction:
-                writelocklog(transaction_id = transaction_id, operation = Operation.lockgrant, 
+                writelocklog(transaction_id = transaction, operation = Operation.lockgrant, 
                     site_id = mip+":"+mport, mode = False)
                 break
             
@@ -81,7 +80,7 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
                 if attempt==2:
                     ItemQueue.objects.get(transaction_id=transaction).delete()
                 print "TRYLOCK ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item) +" IN PHASE "+str(phase)
-                writelocklog(transaction_id = transaction_id, operation = Operation.lockdeny, 
+                writelocklog(transaction_id = transaction, operation = Operation.lockdeny, 
                     site_id = mip+":"+mport, mode = False)
                 return HttpResponse("Abort")
     
@@ -93,12 +92,12 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
     result=True
     for k, v in reply.iteritems():
         if v=="Abort":
-            writelocklog(transaction = transaction_id, operation = Operation.lockgrant, 
+            writelocklog(transaction_id = transaction, operation = Operation.lockgrant, 
                 site_id = k[0]+":"+k[1], mode = True)
             result=False
             break
         elif v=="Success":
-            writelocklog(transaction = transaction_id, operation = Operation.lockdeny, 
+            writelocklog(transaction_id = transaction, operation = Operation.lockdeny, 
                 site_id = k[0]+":"+k[1], mode = True)
     
     if result==True:
@@ -187,6 +186,7 @@ def items_empty(request):
     ItemQueue.objects.all().delete()
     ItemLock.objects.all().delete()
     SellerItem.objects.all().delete()
+    clearalllogs()
     
     return redirect('/transactions/connections_manager/')
 # when new seller is created seller 

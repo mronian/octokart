@@ -43,7 +43,6 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
 
     if request!=None:
         
-        print request.POST
         msg_id=request.POST['message']
         mip=request.POST['ip']
         mport=request.POST['port']
@@ -55,7 +54,7 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
             item_sid=request.POST['item_seller_id']
             item_q=request.POST['item_quantity']
             try:
-                item = SellerItem.objects.get(item_id=CatalogueItem.objects.get(id=item_id), seller_id=User.objects.get(id=item_sid))
+                item = SellerItem.objects.get(item_id=CatalogueItem.objects.get(id=item_iid), seller_id=User.objects.get(id=item_sid))
                 flag = 1
             except SellerItem.DoesNotExist:
                 flag=0
@@ -111,8 +110,8 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
     
     if result==True:
         writecommitlog(transaction_id = msg.mid, operation = Operation.ready)
-        writetransactionlog(transaction_id = msg.mid, seller_id = item.seller_id, data_id = 
-            item.item_id, oldvalue = 0, newvalue = item.quantity)
+        writetransactionlog(transaction_id = msg.mid, seller_id = item.seller_id.id, data_id = 
+            item.item_id.id, oldvalue = 0, newvalue = item.quantity)
         if t_type=='item':
             if flag==0:
                 item.save()
@@ -236,6 +235,7 @@ def perform_transaction(request=None, seller=None, item=None):
         response=prepare_for_commit(None, msg, item)
         
         if response.getvalue()=="Success":
+            
             #response=commit(None, msg)
             
             msg=create_message()    
