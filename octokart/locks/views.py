@@ -10,6 +10,9 @@ from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
 from threading import Thread, Lock
 from seller.models import SellerItem
+
+from logger.models import writetransactionlog, writecommitlog, writelocklog, writeloginlog
+from logger.models import Operation
 # Create your views here.
 
 item_mutex=Lock()
@@ -32,6 +35,8 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
             return HttpResponse("Seen")
         except Message.DoesNotExist:
             msg=Message.objects.create(mid=msg_id)  
+            writelocklog(transaction_id = msg.mid, operation = Operation.lockrequest, 
+                site_id = mip+":"+mport, mode = True)
             msg.save() 
        
     else :
@@ -67,13 +72,16 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
             #if settings.SERVER_PORT=="5002" and attempt<2:
             #    lock=ItemLock.objects.create(transaction_id="FAILING", item_id=3)
             if lock.transaction_id==transaction:
+                writelocklog(transaction_id = transaction_id, operation = Operation.lockgrant, 
+                    site_id = mip+":"+mport, mode = False)
                 break
             
             if i==2:
                 if attempt==2:
                     ItemQueue.objects.get(transaction_id=transaction).delete()
                 print "TRYLOCK ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item) +" IN PHASE "+str(phase)
-                    
+                writelocklog(transaction_id = transaction_id, operation = Operation.lockdeny, 
+                    site_id = mip+":"+mport, mode = False)
                 return HttpResponse("Abort")
     
     params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, item=item, phase=phase, attempt=attempt, transaction=transaction)
@@ -82,10 +90,15 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
     reply=flood(mip, mport, "/locks/items/request/", encoded_params, msg, "TRYLOCK", reply)
     
     result=True
-    for v in reply.values():
+    for k, v in reply.iteritems():
         if v=="Abort":
+            writelocklog(transaction = transaction_id, operation = Operation.lockgrant, 
+                site_id = k[0]+":"+k[1], mode = True)
             result=False
             break
+        elif v=="Success":
+            writelocklog(transaction = transaction_id, operation = Operation.lockdeny, 
+                site_id = k[0]+":"+k[1], mode = True)
     
     if result==True:
         print "ALL SUBLOCKS ACQUIRED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" FOR ITEM "+str(item) +" IN PHASE "+str(phase)
@@ -133,6 +146,8 @@ def items_release(request=None, msg=None, item_passed=None):
             return HttpResponse("Seen")
         except Message.DoesNotExist:
             msg=Message.objects.create(mid=msg_id)  
+            writelocklog(transaction_id = msg.mid, operation = Operation.lockrelease, mode = True, 
+                site_id = mip+":"+mport)
             msg.save() 
        
     else :
@@ -151,7 +166,9 @@ def items_release(request=None, msg=None, item_passed=None):
     reply=flood(mip, mport, "/locks/items/release/", encoded_params, msg, "RELEASELOCK", reply)
     
     result=True
-    for v in reply.values():
+    for k, v in reply.iteritems():
+        writelocklog(site_id = v[0]+":"+v[1], operation = Operation.lockrelease, mode = True, 
+            transaction_id = msg.mid)
         if v=="Abort":
             result=False
             break

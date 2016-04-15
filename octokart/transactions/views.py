@@ -9,6 +9,8 @@ from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
 from locks.views import items_request, items_release, seller_request, seller_release
 from seller.models import SellerItem, CatalogueItem
+from logger.models import Operation
+from logger.models import writetransactionlog, writecommitlog, writelocklog, writeloginlog
 from django.contrib.auth.models import User
 from flood import flood
 import time
@@ -29,6 +31,7 @@ def receive_connection(request):
 @csrf_exempt
 def prepare_for_commit(request=None, msg=None, item=None, seller=None):
     print "ENTERED PRECOMMIT"
+
     t_type=None
     item_iid=None
     item_sid=None
@@ -87,6 +90,7 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
             seller_pwd = seller.pwd
 
         
+    writecommitlog(transaction_id = msg.mid, operation = Operation.start)
     print "PREPARING FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
     params=None
     if t_type=="items":
@@ -105,6 +109,9 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
             break
     
     if result==True:
+        writecommitlog(transaction_id = msg.mid, operation = Operation.ready)
+        writetransactionlog(transaction_id = msg.mid, seller_id = item.seller_id, data_id = 
+            item.item_id, oldvalue = 0, newvalue = item.quantity)
         if t_type=='item':
             if flag==0:
                 item.save()
@@ -120,6 +127,7 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
         
         return HttpResponse("Success")
     else :
+        writecommitlog(transaction_id = msg.mid, operation = Operation.no)
         print "PRECOMMIT ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
         
         return HttpResponse("Abort")
@@ -157,11 +165,11 @@ def commit(request=None, msg=None):
     
     if result==True:
         print "READY FOR COMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
-        
+        writetransactionlog(transaction_id = msg.mid, operation = Operation.commit)
         return HttpResponse("Success")
     else :
         print "COMMIT ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
-        
+        writetransactionlog(transaction_id = msg.mid, operation = Operation.abort)
         return HttpResponse("Abort")
     
     

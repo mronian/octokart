@@ -2,6 +2,8 @@ from transactions.models import Connection
 import urllib2
 from urllib2 import urlopen, URLError, HTTPError
 from urllib import urlencode
+from logger.models import Operation
+from logger.models import writetransactionlog, writecommitlog, writelocklog, writeloginlog
 
 def flood(mip, mport, suburl, params, msg, logmsg, reply):
     conn=Connection.objects.all()
@@ -12,6 +14,9 @@ def flood(mip, mport, suburl, params, msg, logmsg, reply):
             url="http://"+c.ip+":"+c.port+suburl
             result=""
             try :
+                if logmsg == "TRYLOCK":
+                    writelocklog(transaction_id = msg.mid, site_id = c.ip+":"c.port, 
+                        operation = Operation.lockrequest, mode = False)
                 response = urlopen( url , params)
             except HTTPError, e:
                 reply[(c.ip,c.port)]="Abort"
