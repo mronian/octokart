@@ -79,11 +79,8 @@ def login(request):
         user = authenticate(username=username, password=password)
 
         if user:
-            if user.is_active:
-                auth_login(request, user)
-                return redirect('/')
-            else:
-                return HttpResponse("Your Octokart account is disabled.")
+            user.is_active=1
+            user.save()
         else:
             print "Invalid login details: {0}, {1}".format(username, password)
             return HttpResponse("Invalid login details supplied.")
@@ -94,5 +91,16 @@ def login(request):
 
 @login_required    
 def logout(request):
-    auth_logout(request)
+    username = request.POST.get('username')
+    user = User.objects.get(username=username)
+    user.is_active=0
+    user.save()
     return HttpResponse("Logged Out.")
+
+def isLoggedIn(request):
+    username = request.POST.get("username")
+    user = User.objects.get(username=username)
+    if user.is_active==1:
+        return True
+    else:
+        return False
