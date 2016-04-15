@@ -13,14 +13,10 @@ $.ajaxSetup({
 });
 
 function generate_table_item(item, key) {
-    open="<tr><td>";
-    //content=key+"</td><td>";
+    open="<tr id=\""+key+"\"><td>";
     content=item['name']+"</td><td>";
-    content+=item['desc']+"</td><td>";
-    content+=item['upvotes']+"</td><td>";
-    content+="<button class=\"upvote_btn\" key="+key+">Upvote</button></td><td>";
-    content+="<input class=\"input item-num\" type=\"text\" value=\"1\" id=\""+key+"\">"+"</td><td>";
-    content+="<button class=\"buy_btn\" key="+key+">Buy</button>";
+    content+=item['quantity']+"</td><td>";
+    content+="<button class=\"btn-primary buy_btn\" key="+key+">Proceed to Buy</button>";
     close="</td></tr>";
     return open+content+close;
 }
@@ -32,34 +28,11 @@ $(document).ready(function(){
     $(document).on('click','.upvote_btn',function(){
         console.log("upvoted "+$(this).attr("key"));
     });
-    $(document).on('click','.buy_btn',function(){
+    $(document).on('click','.buy_btn',function(e){
         item_id = $(this).attr("key");
-        quantity = $('#'+item_id).val();
-        console.log("buyed item "+item_id+ "quantity=" +  quantity);
-        
+        window.location.href =  "http://localhost:5000/store/item/"+item_id;
+        var x = document.getElementById("t1").rows[item_id].cells;
 
-        var my_data = {
-                        id: item_id,
-
-                        //name: "its me",
-                    };
-        var ajaxRequest = $.ajax({
-                    type: "PUT",
-                    url: url_main ,
-                    data: my_data,
-                    success: function(msg){
-                        console.log( "Data updated: " + msg );
-                        
-
-                    },
-                    error: function(XMLHttpRequest, textStatus, errorThrown) {
-                    alert("some error" );
-
-                    console.log(XMLHttpRequest)
-                    console.log(textStatus);
-                    console.log(errorThrown);
-                    }
-                    });
     });
     var ajaxRequest = $.ajax({
                         url : "http://127.0.0.1:5000/seller/get_catalogue/", // the endpoint
@@ -68,9 +41,9 @@ $(document).ready(function(){
                         success : function(catalogue) {
                             $('#t1 > tbody').html("");
                             for (var key in catalogue) {
-                                console.log('a'+ key);
+                                console.log( key);
                                 console.log(catalogue[key]);
-                                table_item=generate_table_item(catalogue[key],key);
+                                table_item = generate_table_item(catalogue[key],key);
                                 $('#t1 > tbody').append(table_item);
                                 console.log($('#t1 > tbody'));
                                 selected_items[key]=0;
