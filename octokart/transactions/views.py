@@ -7,8 +7,7 @@ import urllib2
 from urllib2 import urlopen, URLError, HTTPError
 from urllib import urlencode
 from django.views.decorators.csrf import csrf_exempt
-from locks.views import items_request, items_release
-from locks.view import seller_request, seller_release
+from locks.views import items_request, items_release, seller_request, seller_release
 from seller.models import SellerItem, CatalogueItem
 from django.contrib.auth.models import User
 from flood import flood
@@ -261,7 +260,7 @@ def delete_connections(request):
     
     return redirect('/transactions/connections_manager/')
 
-def check_connection(request):
+def check_connection(request):  
     conn_id=request.GET[u'id']
     conn=Connection.objects.get(id=conn_id)
     url="http://"+conn.ip+":"+conn.port+"/transactions/connections_manager/"
