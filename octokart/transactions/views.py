@@ -11,6 +11,7 @@ from locks.views import items_request, items_release, seller_request, seller_rel
 from seller.models import SellerItem, CatalogueItem
 from logger.models import Operation
 from logger.models import writetransactionlog, writecommitlog, writelocklog, writeloginlog
+from logger.models import getTime, updateTime
 from django.contrib.auth.models import User
 from flood import flood
 import time
@@ -65,7 +66,7 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
             try:
                 seller = User.objects.get(username=seller_uid)
                 flag = 1
-            except: User.DoesNotExist:
+            except User.DoesNotExist:
                 seller = User(username=seller_uid, password=seller_pwd)
                 flag = 0
         try:
@@ -197,7 +198,7 @@ def acquire_locks(msg, table_to_lock):
             response=items_request(None, msg, 1, 1, i, msg.mid)
         elif table_to_lock=="seller":
             seller_name = "sabya"
-            response=seller_request(None, msg, seller_id, 1, i, msg.mid)
+            response=seller_request(None, msg, 1, 1, i, msg.mid)
         
         if response.getvalue()=="Success":
             
@@ -222,8 +223,8 @@ def perform_transaction(request=None, seller=None, item=None):
         trans_type_id=1
     else:
         trans_type_id=0
-    # item=SellerItem(item_id=CatalogueItem.objects.get(id=1), seller_id=User.objects.get(id=1), quantity=50)
-    
+    item=SellerItem(item_id=CatalogueItem.objects.get(id=1), seller_id=User.objects.get(id=1), quantity=50)
+    trans_type_id=1
     #trans_type=int(request.POST["trans_type"])
     table_to_lock=transaction_type[trans_type_id]
     

@@ -15,7 +15,7 @@ def flood(mip, mport, suburl, params, msg, logmsg, reply):
             result=""
             try :
                 if logmsg == "TRYLOCK":
-                    writelocklog(transaction_id = msg.mid, site_id = c.ip+":"c.port, 
+                    writelocklog(transaction_id = msg.mid, site_id = c.ip+":"+c.port, 
                         operation = Operation.lockrequest, mode = False)
                 response = urlopen( url , params)
             except HTTPError, e:

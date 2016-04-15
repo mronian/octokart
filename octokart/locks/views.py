@@ -12,6 +12,7 @@ from threading import Thread, Lock
 from seller.models import SellerItem
 
 from logger.models import writetransactionlog, writecommitlog, writelocklog, writeloginlog
+from logger.models import getTime, updateTime
 from logger.models import Operation
 # Create your views here.
 
