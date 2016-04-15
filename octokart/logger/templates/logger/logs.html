@@ -1,0 +1,16 @@
+{% if logs %}
+    <table border = "1">
+        <tr>
+            <th>Timestamp</th>
+            <th>Log</th>
+        </tr>
+        {% for log in logs %}
+            <tr>
+                <td>{{log.0}}</td>
+                <td>{{log.1}}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>No logs are available</p>
+{% endif %}

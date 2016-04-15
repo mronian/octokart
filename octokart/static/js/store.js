@@ -26,7 +26,7 @@ $('document').ready(function(){
     selected_items={}
     
     var ajaxRequest = $.ajax({
-                        url : "http://127.0.0.1:5000/seller/get_catalogue/", // the endpoint
+                        url : "/seller/get_catalogue/", // the endpoint
                         type : "GET", // http method
                         contentType: "application/json",
                         success : function(catalogue) {
@@ -45,7 +45,7 @@ $('document').ready(function(){
     
     $('#refreshcat').click(function(event){
         var ajaxRequest = $.ajax({
-                        url : "http://127.0.0.1:5000/seller/get_catalogue/", // the endpoint
+                        url : "/seller/get_catalogue/", // the endpoint
                         type : "GET", // http method
                         contentType: "application/json",
                         success : function(catalogue) {
@@ -77,7 +77,7 @@ $('document').ready(function(){
         console.log(selected_items)
 
           var ajaxRequest = $.ajax({
-                        url : "http://127.0.0.1:5000/seller/sync_catalogue/", // the endpoint
+                        url : "/seller/sync_catalogue/", // the endpoint
                         type : "GET", // http method
                         contentType: "application/json",
                         datatype:"json",

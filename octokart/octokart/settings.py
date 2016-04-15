@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 import os
 import sys
+import socket
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,12 +34,12 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 if sys.argv[1]=="runserver":
     SERVER_ID_OCTOKART = sys.argv[2]
-    SERVER_IP, SERVER_PORT=SERVER_ID_OCTOKART.split(":")
+    SERVER_PORT=SERVER_ID_OCTOKART.split(":")[1]
 else :
     SERVER_ID_OCTOKART=""
-    SERVER_IP=""
     SERVER_PORT="4"
 
+SERVER_IP = socket.gethostbyname(socket.gethostname())
 
 LOGIN_URL = '/'
 # Application definition
