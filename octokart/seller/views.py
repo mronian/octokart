@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from seller.models import CatalogueItem, SellerItem
 from django.contrib.auth.models import User
 import json
@@ -9,7 +9,11 @@ from seller.forms import UserForm
 import ast
 # Create your views here.
 
+@login_required
 def get_catalogue(request):
+    # user = request.user
+    # if user.is_active == 1:
+    print "get_catalogue"
     cataloguedb = CatalogueItem.objects.all()
     
     catalogue={}
@@ -18,11 +22,17 @@ def get_catalogue(request):
         catalogue[c.id]={'name':c.name, 'desc':c.desc, 'upvotes':c.upvotes}
     
     return JsonResponse(catalogue)
+    # else:
+    #     print "User not authenticated"
+    #     return JsonResponse({"failure":"failure"})
 
+@login_required
 def sync_catalogue(request):
+    # if user.is_active==1:
+    seller_id = request.user
     itemDict = request.GET.dict()
-    seller_id = itemDict['0']
-    seller_id = User.objects.get(id=seller_id)
+    # seller_id = itemDict['0']
+    # seller_id = User.objects.get(id=seller_id)
     try: 
         seller_exist = SellerItem.objects.filter(seller_id=seller_id)
         for key in itemDict:
@@ -36,6 +46,7 @@ def sync_catalogue(request):
                 except SellerItem.DoesNotExist:
                     sellerItem = SellerItem.objects.create(seller_id=seller_id,item_id=item_id,quantity=item_count)
                     sellerItem.save()
+        return JsonResponse({'success':'success'})
     #update the existing list
     except SellerItem.DoesNotExist:
         #create the seller id and add each item to list
@@ -45,14 +56,16 @@ def sync_catalogue(request):
                 item_count = itemDict[key]
                 sellerItem = SellerItem.objects.create(seller_id=seller_id,item_id=item_id,quantity=item_count)
                 sellerItem.save()
-    
+        return JsonResponse({'success':'success'})
+    # else:
+    #     print "Not an active user"
+    #     return JsonResponse({'failure':'failure'})
     # print request.body
         # myDict = dict(sellerdict.iterlists())
     # print myDict
     # print "###############################################"
-    # print sellerdict
-    print request.user.is_authenticated()    
-    return JsonResponse({'success':'success'})
+    # print sellerdict 
+    
 
 def register(request):
     registered = False
@@ -72,6 +85,7 @@ def register(request):
         return render(request, 'seller/register.html', {'user_form': user_form, 'registered': registered} )
 
 def login(request):
+    print "login called"
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -79,8 +93,11 @@ def login(request):
         user = authenticate(username=username, password=password)
 
         if user:
-            user.is_active=1
-            user.save()
+            if user.is_active:
+                auth_login(request, user)
+                return redirect('/octokartseller/')
+            else:
+                return HttpResponse("Your Octokart account is disabled.")
         else:
             print "Invalid login details: {0}, {1}".format(username, password)
             return HttpResponse("Invalid login details supplied.")
@@ -91,16 +108,5 @@ def login(request):
 
 @login_required    
 def logout(request):
-    username = request.POST.get('username')
-    user = User.objects.get(username=username)
-    user.is_active=0
-    user.save()
+    auth_logout(request)
     return HttpResponse("Logged Out.")
-
-def isLoggedIn(request):
-    username = request.POST.get("username")
-    user = User.objects.get(username=username)
-    if user.is_active==1:
-        return True
-    else:
-        return False

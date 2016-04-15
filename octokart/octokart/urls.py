@@ -25,4 +25,5 @@ urlpatterns = [
     url(r'^locks/', include('locks.urls')),
     url(r'^logger/', include('logger.urls')),
     url(r'^transactions/', include('transactions.urls')),
+    url(r'^octokartseller/', include('octokartseller.urls')),
 ]
