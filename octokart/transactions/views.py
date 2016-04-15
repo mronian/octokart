@@ -36,6 +36,7 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
     item_q=None
     seller_uid=None
     seller_pwd=None
+    flag = 0
 
     if request!=None:
         
@@ -50,11 +51,21 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
             item_iid=request.POST['item_item_id']
             item_sid=request.POST['item_seller_id']
             item_q=request.POST['item_quantity']
-            item=SellerItem(item_id=CatalogueItem.objects.get(id=item_iid), seller_id=User.objects.get(id=item_sid), quantity=item_q)
+            try:
+                item = SellerItem.objects.get(item_id=CatalogueItem.objects.get(id=item_id), seller_id=User.objects.get(id=item_sid))
+                flag = 1
+            except SellerItem.DoesNotExist:
+                flag=0
+                item=SellerItem(item_id=CatalogueItem.objects.get(id=item_iid), seller_id=User.objects.get(id=item_sid), quantity=item_q)
         elif t_type=="seller":
             seller_uid=request.POST['seller_uid']
             seller_pwd=request.POST['seller_pwd']
-            seller = User(username=seller_uid, password=seller_pwd)
+            try:
+                seller = User.objects.get(username=seller_uid)
+                flag = 1
+            except: User.DoesNotExist:
+                seller = User(username=seller_uid, password=seller_pwd)
+                flag = 0
         try:
             msg = Message.objects.get(mid=msg_id)
             print "MESSAGE "+str(msg)+" ALREADY SEEN AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport
@@ -96,9 +107,15 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
     
     if result==True:
         if t_type=='item':
-            item.save()
+            if flag==0:
+                item.save()
+            else:
+                item.quantity=item_q
         elif t_type=='seller':
-            seller.save()
+            if flag==0:
+                seller.save()
+            else:
+                seller.password = seller_pwd
         
         print "READY FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
         
