@@ -47,27 +47,30 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
         mip=request.POST['ip']
         mport=request.POST['port']
         t_type=request.POST[u'trans_type']
-        
+        timestamp=request.POST['timestamp']
+        updateTime(timestamp)
         
         if t_type=="items":
             item_iid=request.POST['item_item_id']
             item_sid=request.POST['item_seller_id']
-            item_q=request.POST['item_quantity']
+            item_q=int(request.POST['item_quantity'])
             try:
-                item = SellerItem.objects.get(item_id=CatalogueItem.objects.get(id=item_iid), seller_id=User.objects.get(id=item_sid))
+                item = SellerItem.objects.get(item_id=CatalogueItem.objects.get(name=item_iid), seller_id=User.objects.get(username=item_sid))
                 flag = 1
             except SellerItem.DoesNotExist:
                 flag=0
-                item=SellerItem(item_id=CatalogueItem.objects.get(id=item_iid), seller_id=User.objects.get(id=item_sid), quantity=item_q)
+                item=SellerItem(item_id=CatalogueItem.objects.get(name=item_iid), seller_id=User.objects.get(username=item_sid), quantity=item_q)
+        
+        
         elif t_type=="seller":
             seller_uid=request.POST['seller_uid']
             seller_pwd=request.POST['seller_pwd']
             try:
                 seller = User.objects.get(username=seller_uid)
-                flag = 1
             except User.DoesNotExist:
-                seller = User(username=seller_uid, password=seller_pwd)
-                flag = 0
+                
+                seller = User(username=seller_uid)
+                seller.set_password(seller_pwd)
         try:
             msg = Message.objects.get(mid=msg_id)
             print "MESSAGE "+str(msg)+" ALREADY SEEN AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport
@@ -81,22 +84,30 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
         
         if item!=None:
             t_type="items"
-            item_iid=item.item_id.id
-            item_sid=item.seller_id.id
+            item_iid=item.item_id.name
+            item_sid=item.seller_id.username
             item_q=item.quantity
+            
         else:
             t_type="seller"
-            seller_uid=seller.username
-            seller_pwd = seller.pwd
-
+            seller_uid = seller['username']
+            seller_pwd = seller['password']
+            seller=User(username=seller_uid)
+            seller.set_password(seller_pwd)
         
+        try:
+                test_item = SellerItem.objects.get(item_id=item.item_id, seller_id=item.seller_id)
+                flag = 1
+                item=test_item
+        except SellerItem.DoesNotExist:
+            flag=0
     writecommitlog(transaction_id = msg.mid, operation = Operation.start)
     print "PREPARING FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
     params=None
     if t_type=="items":
-        params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, trans_type=t_type, item_item_id=item_iid, item_seller_id=item_sid, item_quantity=item_q)
+        params = dict(timestamp = getTime(), ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, trans_type=t_type, item_item_id=item_iid, item_seller_id=item_sid, item_quantity=item_q)
     elif t_type=="seller":
-        params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, trans_type=t_type, seller_uid=seller_uid, seller_pwd=seller_pwd)
+        params = dict(timestamp = getTime(), ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, trans_type=t_type, seller_uid=seller_uid, seller_pwd=seller_pwd)
 
     encoded_params = urlencode(params)
     reply={}
@@ -109,20 +120,19 @@ def prepare_for_commit(request=None, msg=None, item=None, seller=None):
             break
     
     if result==True:
-        writecommitlog(transaction_id = msg.mid, operation = Operation.ready)
-        writetransactionlog(transaction_id = msg.mid, seller_id = item.seller_id.id, data_id = 
-            item.item_id.id, oldvalue = 0, newvalue = item.quantity)
-        if t_type=='item':
+        if t_type=='items':
+            writecommitlog(transaction_id = msg.mid, operation = Operation.ready)
+            writetransactionlog(transaction_id = msg.mid, seller_id = item_sid, data_id = item_iid, oldvalue = 0, newvalue = item.quantity)
+        
             if flag==0:
                 item.save()
             else:
-                item.quantity=item_q
+                item.quantity-=item_q
+                item.save()
+                
         elif t_type=='seller':
-            if flag==0:
-                seller.save()
-            else:
-                seller.password = seller_pwd
-        
+            seller.save()
+            
         print "READY FOR PRECOMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
         
         return HttpResponse("Success")
@@ -138,7 +148,9 @@ def commit(request=None, msg=None):
         msg_id=request.POST["message"]
         mip=request.POST["ip"]
         mport=request.POST['port']
-        
+        timestamp=request.POST['timestamp']
+        updateTime(timestamp)
+                
         try:
             msg = Message.objects.get(mid=msg_id)
             print "MESSAGE "+str(msg)+" ALREADY SEEN AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport
@@ -152,10 +164,10 @@ def commit(request=None, msg=None):
         
     print "PREPARING FOR COMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
     
-    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid)
+    params = dict(timestamp = getTime(), ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid)
     encoded_params = urlencode(params)
     reply={}
-    reply=flood(mip, mport, "/transactions/prepare/", encoded_params, msg, "COMMIT", reply)
+    reply=flood(mip, mport, "/transactions/commit/", encoded_params, msg, "COMMIT", reply)
     
     result=True
     for v in reply.values():
@@ -164,12 +176,12 @@ def commit(request=None, msg=None):
             break
     
     if result==True:
-        print "READY FOR COMMIT AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
-        writetransactionlog(transaction_id = msg.mid, operation = Operation.commit)
+        print "COMMITTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
+        writecommitlog(transaction_id = msg.mid, operation = Operation.commit)
         return HttpResponse("Success")
     else :
         print "COMMIT ABORTED AT "+settings.SERVER_IP+":"+settings.SERVER_PORT
-        writetransactionlog(transaction_id = msg.mid, operation = Operation.abort)
+        writecommitlog(transaction_id = msg.mid, operation = Operation.abort)
         return HttpResponse("Abort")
     
     
@@ -186,31 +198,39 @@ def release_locks(msg, table_to_lock):
     return "Success"
 
 
-def acquire_locks(msg, table_to_lock):
+def acquire_locks(msg, table_to_lock, field):
     
     print "REQUESTING LOCKS FOR TABLE:"+table_to_lock
+    response=None
+    print field
+    print field.item_id
+    print field.item_id.name
     
     for i in range(3):
         
         print "ATTEMPT "+str(i+1)+" TO GET LOCKS FROM COORDINATOR"
         if table_to_lock=="items":
-            response=items_request(None, msg, 1, 1, i, msg.mid)
+            response=items_request(None, msg, field.item_id.name, 1, i, msg.mid)
+            
         elif table_to_lock=="seller":
-            seller_name = "sabya"
-            response=seller_request(None, msg, 1, 1, i, msg.mid)
+            response=seller_request(None, msg, field['username'], 1, i, msg.mid)
         
         if response.getvalue()=="Success":
             
-                msg2=create_message()
-                response=items_request(None, msg2, 1, 2, i, msg.mid)
+            msg2=create_message()
+            
+            if table_to_lock=="items":
+                response=items_request(None, msg2, field.item_id.name, 2, i, msg.mid)
+            elif table_to_lock=="seller":
+                response=seller_request(None, msg2, field['username'], 2, i, msg.mid)
                 
-                if response.getvalue()=="Success":
-                    
-                    print "ACQUIRED LOCKS FROM ALL CONNECTIONS FOR TABLE:"+table_to_lock
+            if response.getvalue()=="Success":
                 
-                    return "Success"
-                
-                time.sleep(0.5)
+                print "ACQUIRED LOCKS FROM ALL CONNECTIONS FOR TABLE:"+table_to_lock
+            
+                return "Success"
+            
+            #time.sleep(0.5)
             
     print "LOCKS COULD NOT BE ACQUIRED"
     
@@ -222,21 +242,31 @@ def perform_transaction(request=None, seller=None, item=None):
         trans_type_id=1
     else:
         trans_type_id=0
-    item=SellerItem(item_id=CatalogueItem.objects.get(id=1), seller_id=User.objects.get(id=1), quantity=50)
-    trans_type_id=1
+    #item=SellerItem(item_id=CatalogueItem.objects.get(id=1), seller_id=User.objects.get(id=1), quantity=50)
+    #trans_type_id=1
     #trans_type=int(request.POST["trans_type"])
     table_to_lock=transaction_type[trans_type_id]
     
     msg=create_message()
+    locked=None
+    if trans_type_id==1:
+        locked=acquire_locks(msg, table_to_lock, item)
+    else :
+        locked=acquire_locks(msg, table_to_lock, seller)
     
-    locked=acquire_locks(msg, table_to_lock)
+    response=None
     if locked=="Success":
         msg=create_message()
-        response=prepare_for_commit(None, msg, item)
+        
+        if trans_type_id==1:    
+            response=prepare_for_commit(None, msg, item, None)
+        else :
+            response=prepare_for_commit(None, msg, None, seller)
         
         if response.getvalue()=="Success":
-            
-            #response=commit(None, msg)
+            msg=create_message()
+                    
+            response=commit(None, msg)
             
             msg=create_message()    
             release_locks(msg, table_to_lock)

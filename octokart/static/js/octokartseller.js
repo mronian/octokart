@@ -22,7 +22,6 @@ function generate_table_item2(item, key) {
 }
 
 $('document').ready(function(){
-    
     selected_items={}
     
     var ajaxRequest = $.ajax({

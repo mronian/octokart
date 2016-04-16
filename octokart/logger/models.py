@@ -24,18 +24,18 @@ class Operation(Enum):
 class TransactionLog(models.Model):
 
     transaction_id = models.CharField(max_length = 50)
-    seller_id = models.IntegerField()
-    data_id = models.IntegerField()
+    seller_id = models.CharField(max_length = 50)
+    data_id = models.CharField(max_length = 50)
     oldvalue = models.IntegerField()
     newvalue = models.IntegerField()
     timestamp = models.IntegerField()
 
     def __str__(self):
-        return "%d : <Transaction = %s, Seller = %d, Data = %d, Oldvalue = %d, Newvalue = %d>" % \
+        return "%d : <Transaction = %s, Seller = %s, Data = %s, Oldvalue = %d, Newvalue = %d>" % \
             (self.timestamp, self.transaction_id, self.seller_id, self.data_id, self.oldvalue, self.newvalue)
 
     def describe(self):
-        return "Transaction %s updates quantity of data %d, sold by seller %d, from %d to %d" % \
+        return "Transaction %s updates quantity of data %s, sold by seller %s, from %d to %d" % \
                 (self.transaction_id, self.data_id, self.seller_id, self.oldvalue, self.newvalue)
 
 class CommitLog(models.Model):
@@ -80,7 +80,7 @@ class LockLog(models.Model):
                 return "Denied lock request for transaction %s to site %s" % (self.transaction_id, 
                     self.site_id)
             elif self.operation == Operation.lockrelease:
-                return "Released lock for transaction %d on site %s" % (self.transaction_id, 
+                return "Released lock for transaction %s on site %s" % (self.transaction_id, 
                     self.site_id)
         else:
             if self.operation == Operation.lockrequest:
@@ -93,27 +93,27 @@ class LockLog(models.Model):
                 return "Denied lock request for transaction %s from site %s" % (self.transaction_id, 
                     self.site_id)
             elif self.operation == Operation.lockrelease:
-                return "Released lock for transaction %d by site %s" % (self.transaction_id, 
+                return "Released lock for transaction %s by site %s" % (self.transaction_id, 
                     self.site_id)
 
 class LoginLog(models.Model):
 
 #    mode = True means login, mode = False means logout
-    seller_id = models.IntegerField()
+    seller_id = models.CharField(max_length = 50)
     mode = models.BooleanField(default = True)
     timestamp = models.IntegerField()
 
     def __str__(self):
         if self.mode == True:
-            return "%d : <Seller %d HAS LOGGED IN>" % (self.timestamp, self.seller_id)
+            return "%d : <Seller %s HAS LOGGED IN>" % (self.timestamp, self.seller_id)
         else:
-            return "%d : <Seller %d HAS LOGGED OUT>" % (self.timestamp, self.seller_id)
+            return "%d : <Seller %s HAS LOGGED OUT>" % (self.timestamp, self.seller_id)
 
     def describe(self):
         if self.mode == True:
-            return "Seller %d has logged in" % self.seller_id
+            return "Seller %s has logged in" % self.seller_id
         else:
-            return "Seller %d has logged out" % self.seller_id
+            return "Seller %s has logged out" % self.seller_id
 
 class Message(models.Model):
 
