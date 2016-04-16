@@ -28,6 +28,8 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
         phase=int(request.POST["phase"])
         attempt=int(request.POST["attempt"])
         transaction=request.POST["transaction"]
+        timestamp=request.POST['timestamp']
+        updateTime(timestamp)
         
         try:
             msg = Message.objects.get(mid=msg_id)
@@ -84,7 +86,7 @@ def items_request(request=None, msg=None, item_passed=None, curphase=1, curattem
                     site_id = mip+":"+mport, mode = False)
                 return HttpResponse("Abort")
     
-    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, item=item, phase=phase, attempt=attempt, transaction=transaction)
+    params = dict(timestamp = getTime(), ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, item=item, phase=phase, attempt=attempt, transaction=transaction)
     encoded_params = urlencode(params)
     reply={}
     reply=flood(mip, mport, "/locks/items/request/", encoded_params, msg, "TRYLOCK", reply)
@@ -139,6 +141,8 @@ def items_release(request=None, msg=None, item_passed=None):
         mip=request.POST["ip"]
         mport=request.POST['port']
         item=request.POST['item']
+        timestamp=request.POST['timestamp']
+        updateTime(timestamp)
         
         try:
             msg = Message.objects.get(mid=msg_id)
@@ -160,7 +164,7 @@ def items_release(request=None, msg=None, item_passed=None):
         
     release_item_lock()
 
-    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, item=item)
+    params = dict(timestamp = getTime(), ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, item=item)
     encoded_params = urlencode(params)
     reply={}
     reply=flood(mip, mport, "/locks/items/release/", encoded_params, msg, "RELEASELOCK", reply)
@@ -185,7 +189,6 @@ def items_release(request=None, msg=None, item_passed=None):
 def items_empty(request):
     ItemQueue.objects.all().delete()
     ItemLock.objects.all().delete()
-    SellerItem.objects.all().delete()
     clearalllogs()
     
     return redirect('/transactions/connections_manager/')
@@ -200,6 +203,8 @@ def seller_request(request=None, msg=None, seller_passed=None, curphase=1, curat
         phase=int(request.POST["phase"])
         attempt=int(request.POST["attempt"])
         transaction=request.POST["transaction"]
+        timestamp=request.POST['timestamp']
+        updateTime(timestamp)
         try:
             msg = Message.objects.get(mid=msg_id)
             print "MESSAGE "+msg.mid+" ALREADY SEEN AT "+settings.SERVER_IP+":"+settings.SERVER_PORT+" SENT BY "+mip+":"+mport+" FOR ITEM "+str(seller)
@@ -249,7 +254,7 @@ def seller_request(request=None, msg=None, seller_passed=None, curphase=1, curat
                     
                 return HttpResponse("Abort")
     
-    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, seller=seller, phase=phase, attempt=attempt, transaction=transaction)
+    params = dict(timestamp = getTime(), ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, seller=seller, phase=phase, attempt=attempt, transaction=transaction)
     encoded_params = urlencode(params)
     reply={}
     reply=flood(mip, mport, "/locks/seller/request/", encoded_params, msg, "TRYLOCK", reply)
@@ -299,6 +304,8 @@ def seller_release(request=None, msg=None, seller_passed=None):
         mip=request.POST["ip"]
         mport=request.POST['port']
         seller=request.POST['seller']
+        timestamp=request.POST['timestamp']
+        updateTime(timestamp)
         
         try:
             msg = Message.objects.get(mid=msg_id)
@@ -318,7 +325,7 @@ def seller_release(request=None, msg=None, seller_passed=None):
         
     release_seller_lock()
 
-    params = dict(ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, seller=seller)
+    params = dict(timestamp = getTime(), ip=settings.SERVER_IP, port=settings.SERVER_PORT, message=msg.mid, seller=seller)
     encoded_params = urlencode(params)
     reply={}
     reply=flood(mip, mport, "/locks/seller/release/", encoded_params, msg, "RELEASELOCK", reply)
